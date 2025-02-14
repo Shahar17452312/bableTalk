@@ -17,7 +17,7 @@ const userSchema=new mongoose.Schema({
     },
     preferredLanguage:{
         type:String,
-
+        required:true
     }
 
 
