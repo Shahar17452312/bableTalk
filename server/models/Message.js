@@ -1,18 +1,22 @@
 import mongoose from "mongoose";
 
 const MessageSchema = new mongoose.Schema({
-    userId: { 
+    senderID: { 
         type: mongoose.Schema.Types.ObjectId, 
-        ref: 'User', 
+        ref: "User", 
         required: true 
+    },
+    receiverID:{
+        type:mongoose.Schema.Types.ObjectId,
+        ref:"User",
+        required:true
     },
     messageContent: { 
         type: String, 
         required: true, 
         trim: true, 
-        minlength: 1, 
-        maxlength: 500 
-    },
+        minlength: 1
+        },
     timestamp: { 
         type: Date, 
         default: Date.now, 
@@ -21,10 +25,6 @@ const MessageSchema = new mongoose.Schema({
     language: { 
         type: String, 
         required: true 
-    },
-    translatedContent: { 
-        type: String, 
-        default: '' 
     }
 });
 

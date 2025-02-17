@@ -3,7 +3,7 @@ import env from "dotenv";
 import connectDB from "./db.js";
 import authRouter from "./routes/authRouter.js"
 import userRouter from "./routes/userRouter.js";
-import messageRouter from "./routes/messageRouter.js";
+import coversationRouter from "./routes/conversationRouter.js"
 
 
 const app=express();
@@ -12,7 +12,7 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use("/auth",authRouter);
 app.use("/user",userRouter);
-app.use("/message",messageRouter);
+app.use("/coversation",coversationRouter);
 
 app.listen(3000,async()=>{
     await connectDB();

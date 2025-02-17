@@ -29,6 +29,7 @@ const registerHandler=async(req,res)=>{
         const token=jwt.sign({id:savedUser.id},process.env.TOKEN_SECRET_KEY,{expiresIn:process.env.TOKEN_EPXIRES_IN})
 
         return res.status(200).json({
+            id:newUser.id,
             message:"User saved",
             email:newUser.email,
             name:newUser.name,
@@ -65,15 +66,18 @@ const loginHandler=async(req,res)=>{
 
         try{
             const isPasswordValid =await bcrypt.compare(password,user.password);
-            if(isPasswordValid ){
-                const token=jwt.sign({id:user.id},process.env.TOKEN_SECRET_KEY,{expiresIn:process.env.TOKEN_EPXIRES_IN})
-                return res.status(200).json({
-                    email:user.email,
-                    name:user.name,
-                    preferredLanguage:user.preferredLanguage,
-                    token:token
-                });
+            if(!isPasswordValid){
+                return res.status(403).json({message:"Wrong Password"});
             }
+            const token=jwt.sign({id:user.id},process.env.TOKEN_SECRET_KEY,{expiresIn:process.env.TOKEN_EPXIRES_IN})
+            return res.status(200).json({
+                id:user.id,
+                email:user.email,
+                name:user.name,
+                preferredLanguage:user.preferredLanguage,
+                token:token
+            });
+            
 
         }
         catch(error){

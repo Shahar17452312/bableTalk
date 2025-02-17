@@ -1,9 +1,9 @@
 import User from "../models/User.js";
-import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
+import {checkToken} from "../util.js"
 
 const getUser=async(req,res)=>{
-   const token=checkToken(req,req.params.id);
+   const token=checkToken(req);
    if(token.status!==202){
     return res.status(token.status).json({message:token.message});
    }
@@ -30,7 +30,7 @@ const getUser=async(req,res)=>{
 
 
 const deleteUser=async(req,res)=>{
-    const token=checkToken(req,req.params.id);
+    const token=checkToken(req);
     if(token.status!==202){
      return res.status(token.status).json({message:token.message});
     }
@@ -68,28 +68,29 @@ const updateUser=async(req,res)=>{
             detailsToUpdate[key]=value;
         }
     });
+    console.log(detailsToUpdate)
 
     try{
+           
         if(detailsToUpdate.password){
             const hash=await bcrypt.hash(detailsToUpdate.password,10);
             detailsToUpdate.password=hash;
         }
-            const updatedUser = await User.findByIdAndUpdate(
-                req.params.id, 
-                { 
-                  ...detailsToUpdate
-                },
-                { new: true } 
-              );
+        const updatedUser = await User.findByIdAndUpdate(
+            req.params.id, 
+            { 
+              ...detailsToUpdate
+            },
+            { new: true } 
+          );
 
-              return{
-                message:"User updated",
-                email:updatedUser.email,
-                name:updatedUser.name,
-                preferredLanguage:updatedUser.preferredLanguage,
-                token:token
-              }
-        
+          return res.status(200).json({
+            message:"User updated",
+            email:updatedUser.email,
+            name:updatedUser.name,
+            preferredLanguage:updatedUser.preferredLanguage,
+            token:token
+          });
         
     }
 
@@ -102,27 +103,7 @@ const updateUser=async(req,res)=>{
 }
 
 
-function checkToken(req,id){
-    const token = req.headers['authorization'];
 
-    if (!token) {
-        return {status:401,message:"token is required"};
-    }
-    try{
-        const decoded =jwt.verify(token, process.env.TOKEN_SECRET_KEY);
-        if(decoded.id1!==req.params.id){
-            return {status:401,message:"User ID mismatch"};
-        }
-        else{
-            return {status:202,message:"Valid token"};
-        }
-
-    }
-    catch(error){
-        return {status:401,message:"Invalid or expired token"};
-    }    
-
-}
 
 
 
