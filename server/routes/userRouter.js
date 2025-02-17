@@ -4,8 +4,8 @@ const router=express.Router();
 
 router.get("/:id",userController.getUser);
 router.post("/add",userController.addUser);
-router.post("/:id",userController.updateUser);
-router.post("/:id",userController.deleteUser);
+router.put("/:id",userController.updateUser);
+router.delete("/:id",userController.deleteUser);
 
 
 
