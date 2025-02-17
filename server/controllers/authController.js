@@ -1,5 +1,6 @@
 import bcrypt from "bcrypt";
 import User from "../models/User.js";
+import jwt from "jsonwebtoken";
 
 const registerHandler=async(req,res)=>{
     const {email,name,password,preferredLanguage}=req.body;
@@ -21,16 +22,18 @@ const registerHandler=async(req,res)=>{
             email,
             name,
             password:hashPassword,
-            preferredLanguage
+            preferredLanguage,
         });
 
-        await newUser.save();
+        const savedUser=await newUser.save();
+        const token=jwt.sign({id:savedUser.id},process.env.TOKEN_SECRET_KEY,{expiresIn:process.env.TOKEN_EPXIRES_IN})
 
         return res.status(200).json({
             message:"User saved",
             email:newUser.email,
             name:newUser.name,
-            preferredLanguage:newUser.preferredLanguage
+            preferredLanguage:newUser.preferredLanguage,
+            token:token
         });
 
 
@@ -63,20 +66,24 @@ const loginHandler=async(req,res)=>{
         try{
             const isPasswordValid =await bcrypt.compare(password,user.password);
             if(isPasswordValid ){
+                const token=jwt.sign({id:user.id},process.env.TOKEN_SECRET_KEY,{expiresIn:process.env.TOKEN_EPXIRES_IN})
                 return res.status(200).json({
                     email:user.email,
                     name:user.name,
-                    preferredLanguage:user.preferredLanguage
+                    preferredLanguage:user.preferredLanguage,
+                    token:token
                 });
             }
 
         }
         catch(error){
-            
+            return res.status(500).json({message:error.message});
+
         }
 
     }
     catch(error){
+        return res.status(500).json({message:error.message});
 
     }
 
