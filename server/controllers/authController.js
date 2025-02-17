@@ -43,7 +43,42 @@ const registerHandler=async(req,res)=>{
 
 };
 
-const loginHandler=()=>{
+const loginHandler=async(req,res)=>{
+
+    const {email,password}=req.body;
+    if(!email||!password){
+        return res.status(400).json({message:"Missing fields"});
+    }
+
+    try{
+        const user=await User.findOne({
+            email
+        });
+
+        if(!user){
+            return res.status(404).json({message:"No user with this email"});
+        }
+
+
+        try{
+            const isPasswordValid =await bcrypt.compare(password,user.password);
+            if(isPasswordValid ){
+                return res.status(200).json({
+                    email:user.email,
+                    name:user.name,
+                    preferredLanguage:user.preferredLanguage
+                });
+            }
+
+        }
+        catch(error){
+            
+        }
+
+    }
+    catch(error){
+
+    }
 
 }
 
