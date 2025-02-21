@@ -61,7 +61,7 @@ function Login(){
             <TextField 
                 id="password" 
                 name="password" 
-                label={flag?"error":"Passwor"} 
+                label={flag?"error":"Password"} 
                 error={flag}
                 value={formValues.password} 
                 onChange={onChangeHandler} 

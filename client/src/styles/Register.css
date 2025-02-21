@@ -1,0 +1,27 @@
+
+.register-main-container{
+    height: 100vh;
+    width: 100vw;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: #d1f7d1;
+
+}
+
+.register-form-container{
+    display: flex;
+    flex-direction: column;
+    gap: 20px; 
+    background-color: white;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0.1, 0.1, 0.1, 0.1); 
+    width: 300px;
+}
+
+.register-form-container>h3{
+    font-family: "Sigmar", serif;
+    font-weight: 400;
+    font-style: normal;
+}
