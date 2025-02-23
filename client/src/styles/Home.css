@@ -87,4 +87,35 @@ body{
     border-radius: 5px;
     margin-bottom: 5px;
   }
+
+  .top-search {
+    width: 40%;
+    margin: 10px auto;
+    border-radius: 10px;
+    background-color: white;
+    position: relative; 
+    z-index: 10;
+  }
+  
+  .floating-users-list {
+    top: 100%;      /* ממקם את הרשימה מיד מתחת לשדה החיפוש */
+    left: 0;
+    right: 0;       /* מאפשר להימתח על כל רוחב ההורה */
+    background-color: white;
+    z-index: 9999;  /* ערך גבוה כדי להיות מעל כל האלמנטים */
+    border: 1px solid #ddd;
+    border-top: none;
+    max-height: 200px;
+    overflow-y: auto;
+    box-shadow: 0px 4px 8px rgba(0,0,0,0.2);
+  }
+  
+  
+  
+  
+  
+  
+  
+  
+  
   

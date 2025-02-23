@@ -103,9 +103,37 @@ const updateUser=async(req,res)=>{
 }
 
 
+const getAllUsers=async(req,res)=>{
+    const token=checkToken(req,req.params.id);
+    if(token.status!==202){
+     return res.status(token.status).json({message:token.message});
+    }
+
+    try{
+        const foundUsers=await User.find();
+        if(!foundUsers){
+         return res.status(404).json({message:"User not found"});
+        }
+
+        const users= foundUsers.map((user)=>{
+            return {id:user.id,name:user.name};
+        })
+
+        return res.status(200).json(users);
+
+    }
+
+    catch(error){
+        return res.status(500).json({message:error.message});
+    }
+
+
+}
 
 
 
 
-export default {getUser,deleteUser,updateUser};
+
+
+export default {getUser,deleteUser,updateUser,getAllUsers};
 

@@ -1,7 +1,7 @@
 
 import {TextField,Button} from "@mui/material";
 import { useNavigate } from "react-router-dom";
-import { useState } from "react";
+import {  useState } from "react";
 import axios from "axios";
 import "../styles/Login.css";
 function Login(){
@@ -13,9 +13,13 @@ function Login(){
 
     async function onSubmitHandler(event){
         event.preventDefault();
-        console.log(formValues);
         try{
-            await axios.post("http://localhost:3000/auth/login",formValues);
+            const user=await axios.post("http://localhost:3000/auth/login",formValues);
+            console.log(user.data);
+            localStorage.setItem("id",user.data.id);
+            localStorage.setItem("preferredLanguage",user.data.preferredLanguage);
+            localStorage.setItem("token",user.data.token);
+
             navigate("/home");
         }
         catch(error){
