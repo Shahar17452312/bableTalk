@@ -91,7 +91,7 @@ const Home = () => {
     <Box className="home-main-container">
       <Paper className="top-search" elevation={3} sx={{ backgroundColor: "#d1f7d1" }}>
         <TextField
-          label="Search online users"
+          label="Search users"
           variant="outlined"
           fullWidth
           value={searchUsers}

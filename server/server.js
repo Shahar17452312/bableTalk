@@ -3,7 +3,6 @@ import env from "dotenv";
 import connectDB from "./db.js";
 import authRouter from "./routes/authRouter.js"
 import userRouter from "./routes/userRouter.js";
-import coversationRouter from "./routes/conversationRouter.js"
 import cors from "cors";
 
 
@@ -19,7 +18,6 @@ app.use(express.json());
 
 app.use("/auth",authRouter);
 app.use("/user",userRouter);
-app.use("/coversation",coversationRouter);
 
 app.listen(3000,async()=>{
     await connectDB();

@@ -1,6 +1,7 @@
 import User from "../models/User.js";
 import bcrypt from "bcrypt";
-import {checkToken} from "../util.js"
+import {checkToken} from "../util.js";
+import CoverSation from "../models/Coversation.js";
 
 const getUser=async(req,res)=>{
    const token=checkToken(req);
@@ -16,7 +17,8 @@ const getUser=async(req,res)=>{
         return res.status(200).json({
             email:user.email,
             name:user.name,
-            preferredLanguage:user.preferredLanguage
+            preferredLanguage:user.preferredLanguage,
+
         });
 
     }
@@ -104,7 +106,7 @@ const updateUser=async(req,res)=>{
 
 
 const getAllUsers=async(req,res)=>{
-    const token=checkToken(req,req.params.id);
+    const token=checkToken(req);
     if(token.status!==202){
      return res.status(token.status).json({message:token.message});
     }
@@ -131,9 +133,76 @@ const getAllUsers=async(req,res)=>{
 }
 
 
+const getAllConversations=async(req,res)=>{
+    const {userID}=req.body;
+
+    try{
+        const token=checkToken(req);
+        if(token.status!==202){
+            return res.status(token.status).json({message:token.message});
+        }
+        const chats=[];
+
+        const conversation=await CoverSation.find().populate("participants","id name").populate("messages");
+        conversation.participants.forEach(user=>{
+            if(user.id===userID){
+                chats.push(conversation.toObject());
+                
+            }
+        })
+        if(!chats){
+            return res.status(401).json({message:"there is no coversations yet"});
+        }
+        return res.status(200).json(chats);
+
+
+    }
+
+    catch(error){
+        return res.status(500).json({messag:"Fail to look for conversation"});
+    }
+}
+
+
+const addConversation=async(req,res)=>{
+
+    const {participantID}=req.body;
+    try{
+        const token=checkToken(req);
+        if(token.status!==202){
+            return res.status(token.status).json({message:token.message});
+        }
+
+        const user=await User.findById(req.params.id);
+        if(!user){
+         return res.status(404).json({message:"User not found"});
+        }
+
+        const conversation=new CoverSation({
+            participants:[req.params.id,participantID]
+        });
+
+        await conversation.save();
+
+        user.chats.push(conversation);
+
+        await user.save();
+
+        return res.status(201).json({ message: "Conversation created successfully", conversation });
+
+
+    }
+    catch(error){
+        return res.status(500).json({message:error.message});
+    }
+}
 
 
 
 
-export default {getUser,deleteUser,updateUser,getAllUsers};
+
+
+
+
+export default {getUser,deleteUser,updateUser,getAllUsers,getAllConversations,addConversation};
 

@@ -8,7 +8,7 @@ const CoversationSchema=new mongoose.Schema({
         type: Date, 
         default: Date.now
     },
-    lastMessage: {
+    messages: {
         type: mongoose.Schema.Types.ObjectId, 
         ref: 'Message' 
     }
