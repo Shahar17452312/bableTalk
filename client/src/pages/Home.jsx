@@ -22,7 +22,7 @@ const Home = () => {
   const handleSearchChats = (event) => setSearchChats(event.target.value);
   const handleSearchUsers = (event) => setSearchUsers(event.target.value);
 
-  const addUserToChats = async(user) => {
+  const addUserToChats = async(user) => {// adding the chosen user of the serach box inside the chats box
     const hasChatAlready = chats.some((chat) => 
       chat.participants.some((participant) => participant._id===user.id)
     );
@@ -51,7 +51,7 @@ const Home = () => {
     setSearchUsers("");
   };
 
-  useEffect(() => {
+  useEffect(() => {//click listeners
     const handleClickOutside = (event) => {
       if (
         searchInputRef.current &&
@@ -70,7 +70,7 @@ const Home = () => {
     };
   }, []);
 
-  useEffect(()=>{
+  useEffect(()=>{// requset for the getAllUsers to be able to search for new user and request for adding the current chats the user has
    const getUsersAndChats=async()=>{
     try{
       const users=await axios.get("http://localhost:3000/user/getAllUsers/"+userId,{
@@ -102,7 +102,7 @@ const Home = () => {
   },[])
 
 
- async function sendMessage(){
+ async function sendMessage(){//handling the new message that sent to the user and post it on the screen
 
     const recieverID=selectedChat.participants.find((participant)=>participant._id!==userId);
     const language=localStorage.getItem("preferredLanguage");
