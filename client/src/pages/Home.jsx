@@ -18,6 +18,7 @@ const Home = () => {
   const userId=localStorage.getItem("id");
   const userName=localStorage.getItem("name");
   const token=localStorage.getItem("token");
+  const ws=useRef(null);
 
   const handleSearchChats = (event) => setSearchChats(event.target.value);
   const handleSearchUsers = (event) => setSearchUsers(event.target.value);
@@ -50,6 +51,27 @@ const Home = () => {
     }
     setSearchUsers("");
   };
+
+  useEffect(()=>{
+
+    ws.current=new WebSocket("ws://localhost:4000");
+    ws.current.onopen = function() {
+      console.log("Connected to WebSocket server");
+      ws.current.send("hello");
+    };
+
+    ws.current.onmessage = function(event) {
+      console.log("Message from server:", event.data);
+    };
+
+    ws.current.onerror = function(error) {
+      console.error("WebSocket error:", error);
+    };
+
+    ws.current.onclose = function(event) {
+      console.log("WebSocket connection closed:", event);
+    };
+})
 
   useEffect(() => {//click listeners
     const handleClickOutside = (event) => {

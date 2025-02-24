@@ -7,6 +7,7 @@ wss.on('connection', (ws) => {
     
     ws.on('message', (message) => {
         console.log(`Received message: ${message}`);
+        ws.send("got your message");
     });
 
     ws.on('close', () => {
