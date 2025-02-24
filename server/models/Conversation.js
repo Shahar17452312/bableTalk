@@ -2,19 +2,19 @@ import mongoose from "mongoose";
 const CoversationSchema=new mongoose.Schema({
     participants: [{
         type: mongoose.Schema.Types.ObjectId, 
-        ref: 'User' 
+        ref: 'user' 
     }],
     createdAt: {
         type: Date, 
         default: Date.now
     },
-    messages: {
+    messages:[ {
         type: mongoose.Schema.Types.ObjectId, 
-        ref: 'Message' 
-    }
+        ref: 'message' 
+    }]
 
 });
 
-const CoverSation=mongoose.model("conversation",CoversationSchema);
+const ConverSation=mongoose.model("conversation",CoversationSchema);
 
-export default CoverSation;
+export default ConverSation;

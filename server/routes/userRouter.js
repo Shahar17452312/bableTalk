@@ -8,6 +8,7 @@ router.delete("/:id",userController.deleteUser);
 router.post("/addConversation/:id",userController.addConversation)
 router.get("/getAllUsers/:id", userController.getAllUsers);
 router.get("/getConversations/:id",userController.getAllConversations);
+router.post("/addMessage/:id",userController.addMessage);
 
 
 

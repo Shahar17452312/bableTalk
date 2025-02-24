@@ -7,42 +7,48 @@ import "../styles/Home.css";
 const Home = () => {
   const [searchChats, setSearchChats] = useState("");
   const [searchUsers, setSearchUsers] = useState("");
-  const [chats, setChats] = useState([
-    { id: 1, name: "John Doe", messages: ["Hello!"] },
-    { id: 2, name: "Jane Smith", messages: ["Hey there!"] },
-  ]);
+  const [chats, setChats] = useState([]);
   const [selectedChat, setSelectedChat] = useState(null);
-  const [message, setMessage] = useState(""); // משתנה להודעה שנשלחת
+  const [message, setMessage] = useState(""); 
 
   const [onlineUsers,setOnlineUsers] = useState([]);
 
   const searchInputRef = useRef(null);
   const usersListRef = useRef(null);
   const userId=localStorage.getItem("id");
+  const userName=localStorage.getItem("name");
   const token=localStorage.getItem("token");
 
   const handleSearchChats = (event) => setSearchChats(event.target.value);
   const handleSearchUsers = (event) => setSearchUsers(event.target.value);
 
-  const addUserToChats = (user) => {
-    if (!chats.some((chat) => chat.id === user.id)) {
-      setChats([...chats, { id: user.id, name: user.name, messages: [] }]);
+  const addUserToChats = async(user) => {
+    const hasChatAlready = chats.some((chat) => 
+      chat.participants.some((participant) => participant._id===user.id)
+    );
+      
+
+    console.log(hasChatAlready);
+
+
+    if (!hasChatAlready&&(user.id!==userId)) {
+      try{
+        const newChat=await axios.post("http://localhost:3000/user/addConversation/"+userId,{
+          participantID:user.id
+        },{
+          headers:{
+            Authorization:"Berear "+token
+          }
+        });
+        console.log("new conversation:",newChat.data);
+        setChats((prevChats) => [...prevChats,newChat.data]);
+        
+      }
+      catch(error){
+        console.error("error: "+error.message);
+      }
     }
     setSearchUsers("");
-  };
-
-  const sendMessage = () => {
-    if (message.trim() === "" || !selectedChat) return;
-
-    setChats((prevChats) =>
-      prevChats.map((chat) =>
-        chat.id === selectedChat.id
-          ? { ...chat, messages: [...chat.messages, message] }
-          : chat
-      )
-    );
-
-    setMessage(""); 
   };
 
   useEffect(() => {
@@ -65,15 +71,23 @@ const Home = () => {
   }, []);
 
   useEffect(()=>{
-   const getUsers=async()=>{
+   const getUsersAndChats=async()=>{
     try{
       const users=await axios.get("http://localhost:3000/user/getAllUsers/"+userId,{
         headers:{
           Authorization:"Bearer "+token
         }
       });
-      console.log(users.data);
       setOnlineUsers(users.data);
+
+      const chats=await axios.get("http://localhost:3000/user/getConversations/"+userId,{
+        headers:{
+          Authorization:"Bearer "+token
+        }
+      });
+      console.log(chats.data)
+
+      setChats(chats.data);
   
     }
     catch(error){
@@ -82,10 +96,54 @@ const Home = () => {
     }
   }
 
-  getUsers();
+  getUsersAndChats();
 
 
   },[])
+
+
+ async function sendMessage(){
+
+    const recieverID=selectedChat.participants.find((participant)=>participant._id!==userId);
+    const language=localStorage.getItem("preferredLanguage");
+    try{
+      const updatedConversation=await axios.post("http://localhost:3000/user/addMessage/"+userId,{
+        conversationID:selectedChat._id,
+        conversationParticipants:selectedChat.participants,
+        message:{
+          senderID:userId,
+          receiverID:recieverID,
+          messageContent:message,
+          language:language
+        }
+      },{
+        headers:{
+          Authorization:"Bearer "+token
+        }
+      });
+      console.log(updatedConversation.data.messages.at(-1).messageContent);
+
+
+
+      setSelectedChat((prevChat) => {
+    
+        const updatedMessages = [...prevChat.messages, updatedConversation.data.messages.at(-1)];
+    
+        return { ...prevChat, messages: updatedMessages };
+    });
+    
+
+      setMessage("");
+
+
+
+
+    }
+
+    catch(error){
+      console.error("error: ",error.message);
+    }
+  }
 
   return (
     <Box className="home-main-container">
@@ -105,11 +163,16 @@ const Home = () => {
               .filter((user) =>
                 user.name.toLowerCase().includes(searchUsers.toLowerCase())
               )
-              .map((user) => (
-                <ListItem key={user.id} button onClick={() => addUserToChats(user)}>
+              .map((user) => {
+                if(user.name!=userName){
+                  return <ListItem key={user.id} button onClick={() => addUserToChats(user)}>
                   {user.name}
-                </ListItem>
-              ))}
+                  </ListItem>
+                }
+
+              }
+                
+            )}
           </List>
         )}
       </Paper>
@@ -130,15 +193,16 @@ const Home = () => {
             onChange={handleSearchChats}
           />
           <List className="chat-list">
-            {chats
-              .filter((chat) =>
-                chat.name.toLowerCase().includes(searchChats.toLowerCase())
-              )
-              .map((chat) => (
-                <ListItem key={chat.id} button onClick={() => setSelectedChat(chat)}>
-                  {chat.name}
+            {chats.map((chat,index) => {
+              console.log(chat.participants);
+              const nameOfChat=chat.participants.find((participant)=>participant._id!==userId);
+              console.log(nameOfChat);
+              return (
+                <ListItem key={index} onClick={() => setSelectedChat(chat)}>
+                  {nameOfChat.name}
                 </ListItem>
-              ))}
+              )
+            })}
           </List>
         </Paper>
 
@@ -147,7 +211,7 @@ const Home = () => {
             <Box className="chat-messages">
               {selectedChat.messages.map((msg, index) => (
                 <Box key={index} className="chat-message">
-                  {msg}
+                  {msg.messageContent}
                 </Box>
               ))}
             </Box>
@@ -160,7 +224,7 @@ const Home = () => {
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
               />
-              <Button variant="contained" color="primary" onClick={sendMessage}>
+              <Button variant="contained" color="primary" onClick={sendMessage} >
                 Send
               </Button>
             </Box>

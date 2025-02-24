@@ -3,12 +3,12 @@ import mongoose from "mongoose";
 const MessageSchema = new mongoose.Schema({
     senderID: { 
         type: mongoose.Schema.Types.ObjectId, 
-        ref: "User", 
+        ref: "user", 
         required: true 
     },
     receiverID:{
         type:mongoose.Schema.Types.ObjectId,
-        ref:"User",
+        ref:"user",
         required:true
     },
     messageContent: { 
@@ -17,7 +17,7 @@ const MessageSchema = new mongoose.Schema({
         trim: true, 
         minlength: 1
         },
-    timestamp: { 
+    createdAt: { 
         type: Date, 
         default: Date.now, 
         required: true 
