@@ -177,7 +177,6 @@ const addConversation=async(req,res)=>{
         if(token.status!==202){
             return res.status(token.status).json({message:token.message});
         }
-
         const user=await User.findById(req.params.id);
         if(!user){
          return res.status(404).json({message:"User not found"});
@@ -218,6 +217,7 @@ const addMessage=async(req,res)=>{
         if(!foundConversation){
             return res.status(404).json({message:"Not found"});
         }
+
         const newMessage= new Message(
             req.body.message
         );

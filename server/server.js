@@ -9,7 +9,7 @@ import cors from "cors";
 const app=express();
 env.config();
 app.use(cors({
-    origin: "http://localhost:5173"
+    origin: ["http://localhost:5173","ws://localhost:4000"]
   }));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
