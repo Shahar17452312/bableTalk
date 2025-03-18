@@ -10,15 +10,16 @@ const Home = () => {
   const [chats, setChats] = useState([]);
   const [selectedChat, setSelectedChat] = useState(null);
   const [message, setMessage] = useState(""); 
-
   const [onlineUsers,setOnlineUsers] = useState([]);
+  const socketRef=useRef();
+  
 
   const searchInputRef = useRef(null);
   const usersListRef = useRef(null);
+  const selectedChatRef = useRef(selectedChat);
   const userId=localStorage.getItem("id");
   const userName=localStorage.getItem("name");
   const token=localStorage.getItem("token");
-  const ws=useRef(null);
 
   const handleSearchChats = (event) => setSearchChats(event.target.value);
   const handleSearchUsers = (event) => setSearchUsers(event.target.value);
@@ -28,9 +29,6 @@ const Home = () => {
       chat.participants.some((participant) => participant._id===user.id)
     );
       
-
-    console.log(hasChatAlready);
-
 
     if (!hasChatAlready&&(user.id!==userId)) {
       try{
@@ -52,26 +50,10 @@ const Home = () => {
     setSearchUsers("");
   };
 
-  useEffect(()=>{
 
-    ws.current=new WebSocket("ws://localhost:4000");
-    ws.current.onopen = function() {
-      console.log("Connected to WebSocket server");
-      ws.current.send("hello");
-    };
-
-    ws.current.onmessage = function(event) {
-      console.log("Message from server:", event.data);
-    };
-
-    ws.current.onerror = function(error) {
-      console.error("WebSocket error:", error);
-    };
-
-    ws.current.onclose = function(event) {
-      console.log("WebSocket connection closed:", event);
-    };
-})
+  useEffect(() => {
+    selectedChatRef.current = selectedChat;
+  }, [selectedChat]);
 
   useEffect(() => {//click listeners
     const handleClickOutside = (event) => {
@@ -118,10 +100,68 @@ const Home = () => {
     }
   }
 
+  
+
   getUsersAndChats();
 
 
-  },[])
+  },[]);
+
+  
+
+  useEffect(() => {
+    // אם כבר יש חיבור לא נפתח חדש
+    if (socketRef.current) return;
+  
+    // יצירת חיבור WebSocket
+    const socket = new WebSocket("ws://localhost:4000");
+  
+    socketRef.current = socket; 
+  
+    socket.onopen = () => {
+      console.log("connected to ws server");
+      socketRef.current.send(JSON.stringify({type:"register",userId:userId}));
+    };
+  
+    socket.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      console.log(selectedChatRef.current);
+    
+      setChats((prevChats) => {
+        const updatedChats = prevChats.map((chat) => {
+          if (chat._id === data.conversationID) {
+            const updatedMessages = [...chat.messages, data.message];
+    
+            if (selectedChatRef.current && selectedChatRef.current._id === chat._id) {
+              setSelectedChat({ ...chat, messages: updatedMessages });
+              console.log("selectedChat updated");
+            }
+    
+            return { ...chat, messages: updatedMessages };
+          }
+          return chat;
+        });
+    
+        return updatedChats;
+      });
+    };
+    
+    socket.onclose = () => {
+      console.log("closing connection");
+    };
+  
+    socket.onerror = (error) => {
+      console.error("error", error.message);
+    };
+  
+    return () => {
+      if (socketRef.current) {
+        socketRef.current.close();
+        socketRef.current = null; 
+      }
+    };
+  }, []);
+  
 
 
  async function sendMessage(){//handling the new message that sent to the user and post it on the screen
@@ -143,17 +183,25 @@ const Home = () => {
           Authorization:"Bearer "+token
         }
       });
-      console.log(updatedConversation.data.messages.at(-1).messageContent);
-
-
 
       setSelectedChat((prevChat) => {
     
         const updatedMessages = [...prevChat.messages, updatedConversation.data.messages.at(-1)];
     
         return { ...prevChat, messages: updatedMessages };
-    });
-    
+      });
+      
+      socketRef.current.send(JSON.stringify({
+        type:"sendMessage",
+        conversationID:selectedChat._id,
+        conversationParticipants:selectedChat.participants,
+        message:{
+          senderID:userId,
+          receiverID:recieverID,
+          messageContent:message,
+          language:language
+        }
+      }))
 
       setMessage("");
 
@@ -216,9 +264,7 @@ const Home = () => {
           />
           <List className="chat-list">
             {chats.map((chat,index) => {
-              console.log(chat.participants);
               const nameOfChat=chat.participants.find((participant)=>participant._id!==userId);
-              console.log(nameOfChat);
               return (
                 <ListItem key={index} onClick={() => setSelectedChat(chat)}>
                   {nameOfChat.name}
