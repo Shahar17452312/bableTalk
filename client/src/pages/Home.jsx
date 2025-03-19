@@ -264,10 +264,10 @@ const Home = () => {
           />
           <List className="chat-list">
             {chats.map((chat,index) => {
-              const nameOfChat=chat.participants.find((participant)=>participant._id!==userId);
+              const user=chat.participants.find((participant)=>participant._id!==userId);
               return (
                 <ListItem key={index} onClick={() => setSelectedChat(chat)}>
-                  {nameOfChat.name}
+                  {user.name}
                 </ListItem>
               )
             })}
@@ -276,9 +276,17 @@ const Home = () => {
 
         {selectedChat && (
           <Paper className="chat-box" elevation={3}>
-            <Box className="chat-messages">
+            <h3 style={{textAlign:"center", color:"blue"}}> { selectedChat.participants.find((participant)=>participant._id!==userId).name } </h3>
+            <Box className="chat-messages" sx={{display:"flex",flexDirection:"column"}}>
               {selectedChat.messages.map((msg, index) => (
-                <Box key={index} className="chat-message">
+                <Box key={index} className="chat-message"   sx={{ 
+                  backgroundColor: msg.senderID === userId ? "green" : "blue", 
+                  maxWidth: "fit-content",
+                  padding: "8px",
+                  borderRadius: "8px",
+                  display:"flex",
+                  alignSelf:msg.senderID === userId ?"flex-start":"flex-end"
+                }}>
                   {msg.messageContent}
                 </Box>
               ))}
