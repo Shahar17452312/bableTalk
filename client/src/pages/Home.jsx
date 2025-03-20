@@ -125,25 +125,30 @@ const Home = () => {
   
     socket.onmessage = (event) => {
       const data = JSON.parse(event.data);
-      console.log(selectedChatRef.current);
+      
+      if (!data || !data.conversationID || !data.message) {
+        console.error("❌ Invalid message format", data);
+        return;
+      }
     
       setChats((prevChats) => {
-        const updatedChats = prevChats.map((chat) => {
+        return prevChats.map((chat) => {
           if (chat._id === data.conversationID) {
-            const updatedMessages = [...chat.messages, data.message];
-    
-            if (selectedChatRef.current && selectedChatRef.current._id === chat._id) {
-              setSelectedChat({ ...chat, messages: updatedMessages });
-              console.log("selectedChat updated");
-            }
-    
-            return { ...chat, messages: updatedMessages };
+            // שמירה על ההודעות הקיימות בלי להחליף
+            return { ...chat, messages: [...chat.messages, data.message] };
           }
           return chat;
         });
-    
-        return updatedChats;
       });
+    
+      // אם הצ'אט הנוכחי נבחר, עדכן את ההודעות גם ב-selectedChat
+      if (selectedChatRef.current && selectedChatRef.current._id === data.conversationID) {
+        setSelectedChat((prevSelected) => ({
+          ...prevSelected,
+          messages: [...(prevSelected?.messages || []), data.message]
+        }));
+        console.log("✅ selectedChat updated", selectedChatRef.current);
+      }
     };
     
     socket.onclose = () => {
