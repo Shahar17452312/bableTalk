@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { Box, Paper, TextField, List, ListItem, Button } from "@mui/material";
 import HamburgerMenu from "../components/HamburgerMenu.jsx";
 import axios from "axios";
+import askGemini from "../../utils.js";
 import "../styles/Home.css";
 
 const Home = () => {
@@ -12,6 +13,7 @@ const Home = () => {
   const [message, setMessage] = useState(""); 
   const [onlineUsers,setOnlineUsers] = useState([]);
   const socketRef=useRef();
+  const [geminiAdvice,setGeminiAdvice]=useState("no advice");
   
 
   const searchInputRef = useRef(null);
@@ -116,21 +118,21 @@ const Home = () => {
     // יצירת חיבור WebSocket
     const socket = new WebSocket("ws://localhost:4000");
   
-    socketRef.current = socket; 
+    socketRef.current = socket;
   
     socket.onopen = () => {
       console.log("connected to ws server");
-      socketRef.current.send(JSON.stringify({type:"register",userId:userId}));
+      socketRef.current.send(JSON.stringify({ type: "register", userId: userId }));
     };
   
-    socket.onmessage = (event) => {
+    socket.onmessage = async (event) => {
       const data = JSON.parse(event.data);
-      
+  
       if (!data || !data.conversationID || !data.message) {
         console.error("❌ Invalid message format", data);
         return;
       }
-    
+  
       setChats((prevChats) => {
         return prevChats.map((chat) => {
           if (chat._id === data.conversationID) {
@@ -140,17 +142,26 @@ const Home = () => {
           return chat;
         });
       });
-    
+  
       // אם הצ'אט הנוכחי נבחר, עדכן את ההודעות גם ב-selectedChat
       if (selectedChatRef.current && selectedChatRef.current._id === data.conversationID) {
         setSelectedChat((prevSelected) => ({
           ...prevSelected,
           messages: [...(prevSelected?.messages || []), data.message]
         }));
-        console.log("✅ selectedChat updated", selectedChatRef.current);
+  
+        // קריאה ל-askGemini והגדרת תשובה
+        try {
+          console.log(data);
+          const geminiAdvice = await askGemini(data.message.messageContent);
+          setGeminiAdvice(geminiAdvice);
+          console.log("✅ selectedChat updated with AI advice", selectedChatRef.current);
+        } catch (error) {
+          console.error("Error fetching AI advice:", error);
+        }
       }
     };
-    
+  
     socket.onclose = () => {
       console.log("closing connection");
     };
@@ -162,10 +173,11 @@ const Home = () => {
     return () => {
       if (socketRef.current) {
         socketRef.current.close();
-        socketRef.current = null; 
+        socketRef.current = null;
       }
     };
   }, []);
+  
   
 
 
@@ -280,37 +292,53 @@ const Home = () => {
         </Paper>
 
         {selectedChat && (
-          <Paper className="chat-box" elevation={3}>
-            <h3 style={{textAlign:"center", color:"blue"}}> { selectedChat.participants.find((participant)=>participant._id!==userId).name } </h3>
-            <Box className="chat-messages" sx={{display:"flex",flexDirection:"column"}}>
-              {selectedChat.messages.map((msg, index) => (
-                <Box key={index} className="chat-message"   sx={{ 
-                  backgroundColor: msg.senderID === userId ? "green" : "blue", 
-                  maxWidth: "fit-content",
-                  padding: "8px",
-                  borderRadius: "8px",
-                  display:"flex",
-                  alignSelf:msg.senderID === userId ?"flex-start":"flex-end"
-                }}>
-                  {msg.messageContent}
-                </Box>
-              ))}
-            </Box>
-            {/* תיבת טקסט לשליחת הודעה */}
-            <Box className="message-input-container" sx={{ display: "flex", gap: 1, padding: 1 }}>
-              <TextField
-                fullWidth
-                variant="outlined"
-                label="Type a message..."
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-              />
-              <Button variant="contained" color="primary" onClick={sendMessage} >
-                Send
+        <Paper className="chat-box" elevation={3}>
+          <h4 style={{ textAlign: "center", color: "blue" }}>
+            {selectedChat.participants.find((participant) => participant._id !== userId).name}
+          </h4>
+          <Box className="chat-messages" sx={{ display: "flex", flexDirection: "column" }}>
+            {selectedChat.messages.map((msg, index) => (
+              <Box key={index} className="chat-message" sx={{
+                backgroundColor: msg.senderID === userId ? "green" : "blue",
+                maxWidth: "fit-content",
+                padding: "8px",
+                borderRadius: "8px",
+                display: "flex",
+                alignSelf: msg.senderID === userId ? "flex-start" : "flex-end"
+              }}>
+                {msg.messageContent}
+              </Box>
+            ))}
+          </Box>
+
+          {/* תיבת טקסט לשליחת הודעה */}
+          <Box className="message-input-container" sx={{ display: "flex", gap: 1, padding: 1 }}>
+            <TextField
+              fullWidth
+              variant="outlined"
+              label="Type a message..."
+              value={message}
+              onChange={(e) => setMessage(e.target.value)} // עדכון ההודעה שהוזנה
+              placeholder={geminiAdvice ? `AI suggests: ${geminiAdvice}` : "Type a message..."} // הצגת ההמלצה אם יש
+            />
+
+            {/* אם יש המלצה, הצגת כפתור להוספת ההמלצה */}
+            {geminiAdvice && (
+              <Button
+                variant="contained"
+                color="secondary"
+                onClick={() => setMessage(geminiAdvice)} // אם המשתמש לוחץ על ההמלצה, היא תתווסף לשדה הטקסט
+              >
+                Use Suggestion
               </Button>
-            </Box>
-          </Paper>
-        )}
+            )}
+
+            <Button variant="contained" color="primary" onClick={sendMessage}>
+              Send
+            </Button>
+          </Box>
+        </Paper>
+      )}
       </Box>
     </Box>
   );
