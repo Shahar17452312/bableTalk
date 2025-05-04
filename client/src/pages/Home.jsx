@@ -11,16 +11,16 @@ const Home = () => {
   const [chats, setChats] = useState([]);
   const [selectedChat, setSelectedChat] = useState(null);
   const [message, setMessage] = useState(""); 
-  const [onlineUsers,setOnlineUsers] = useState([]);
+  const [users,setusers] = useState([]);
   const socketRef=useRef();
-  const [geminiAdvice,setGeminiAdvice]=useState("no advice");
+  const [geminiAdvice,setGeminiAdvice]=useState("");
   
 
   const searchInputRef = useRef(null);
   const usersListRef = useRef(null);
   const selectedChatRef = useRef(selectedChat);
   const userId=localStorage.getItem("id");
-  const userName=localStorage.getItem("name");
+  const userName=localStorage.getItem("name");//the user name who is currently connected
   const token=localStorage.getItem("token");
 
   const handleSearchChats = (event) => setSearchChats(event.target.value);
@@ -84,7 +84,7 @@ const Home = () => {
           Authorization:"Bearer "+token
         }
       });
-      setOnlineUsers(users.data);
+      setusers(users.data);
 
       const chats=await axios.get("http://localhost:3000/user/getConversations/"+userId,{
         headers:{
@@ -246,12 +246,12 @@ const Home = () => {
 
         {searchUsers && (
           <List className="floating-users-list" ref={usersListRef} sx={{ position: "absolute" }}>
-            {onlineUsers
+            {users
               .filter((user) =>
                 user.name.toLowerCase().includes(searchUsers.toLowerCase())
               )
               .map((user) => {
-                if(user.name!=userName){
+                if(user.name!==userName){
                   return <ListItem key={user.id} button onClick={() => addUserToChats(user)}>
                   {user.name}
                   </ListItem>
@@ -280,10 +280,10 @@ const Home = () => {
             onChange={handleSearchChats}
           />
           <List className="chat-list">
-            {chats.map((chat,index) => {
+            {chats.map((chat) => {
               const user=chat.participants.find((participant)=>participant._id!==userId);
               return (
-                <ListItem key={index} onClick={() => setSelectedChat(chat)}>
+                <ListItem key={chat.id} onClick={() => setSelectedChat(chat)}>
                   {user.name}
                 </ListItem>
               )

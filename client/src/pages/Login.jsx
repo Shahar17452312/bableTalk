@@ -17,6 +17,7 @@ function Login(){
             const user=await axios.post("http://localhost:3000/auth/login",formValues);
             console.log(user.data);
             localStorage.setItem("id",user.data.id);
+            localStorage.setItem("name",user.data.name);
             localStorage.setItem("preferredLanguage",user.data.preferredLanguage);
             localStorage.setItem("token",user.data.token);
 
