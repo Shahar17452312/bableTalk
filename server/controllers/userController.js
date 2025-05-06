@@ -133,40 +133,31 @@ const getAllUsers=async(req,res)=>{
 }
 
 
-const getAllConversations=async(req,res)=>{
-
-    try{
-        const token=checkToken(req);
-        if(token.status!==202){
-            return res.status(token.status).json({message:token.message});
+const getAllConversations = async (req, res) => {
+    try {
+        const token = checkToken(req);
+        if (token.status !== 202) {
+            return res.status(token.status).json({ message: token.message });
         }
-        const chats=[];
-        const conversation = await ConverSation.find()
-        .populate({ path: "participants", select: "id name" })
+
+        const chats = await ConverSation.find({ participants: req.params.id })
+        .populate({ path: "participants", select: "_id name" })
         .populate({ path: "messages" });
-      
-        conversation.forEach((conversation)=>{
-            conversation.participants.forEach((participant)=>{
-                if(participant.id===req.params.id){
-                    chats.push(conversation);
-                }
-            })
 
-        })
+        console.log(JSON.stringify(chats));
 
-        if(!chats){
-            return res.status(401).json({message:"there is no conversations yet"});
+        // אם אין צ'אטים תואמים
+        if (chats.length === 0) {
+            return res.status(401).json({ message: "There are no conversations yet" });
         }
+
         return res.status(200).json(chats);
-
-
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ message: "Internal server error" });
     }
+};
 
-    catch(error){
-        console.log(error.message);
-        return res.status(500).json({message:"Fail to look for conversation"});
-    }
-}
 
 
 const addConversation=async(req,res)=>{

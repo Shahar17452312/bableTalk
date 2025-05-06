@@ -134,14 +134,29 @@ const Home = () => {
       }
   
       setChats((prevChats) => {
-        return prevChats.map((chat) => {
-          if (chat._id === data.conversationID) {
-            // שמירה על ההודעות הקיימות בלי להחליף
-            return { ...chat, messages: [...chat.messages, data.message] };
-          }
-          return chat;
-        });
+        const chatExists = prevChats.some(chat => chat._id === data.conversationID);
+      
+        if (chatExists) {
+          // עדכון של הצ'אט הקיים עם ההודעה החדשה
+          return prevChats.map((chat) => {
+            if (chat._id === data.conversationID) {
+              return { ...chat, messages: [...chat.messages, data.message] };
+            }
+            return chat;
+          });
+        } else {
+          console.log("the new conversation:"+data);
+          // הוספת צ'אט חדש עם ההודעה
+          const newChat = {
+            _id: data.conversationID,
+            participants: data.conversationParticipants || [], // אם צריך
+            messages: [data.message],
+          };
+          console.log(newChat);
+          return [...prevChats, newChat];
+        }
       });
+      
   
       // אם הצ'אט הנוכחי נבחר, עדכן את ההודעות גם ב-selectedChat
       if (selectedChatRef.current && selectedChatRef.current._id === data.conversationID) {
