@@ -252,7 +252,7 @@ const Home = () => {
               )
               .map((user) => {
                 if(user.name!==userName){
-                  return <ListItem key={user.id} button onClick={() => addUserToChats(user)}>
+                  return <ListItem key={user.id} button="true" onClick={() => addUserToChats(user)}>
                   {user.name}
                   </ListItem>
                 }
@@ -283,7 +283,7 @@ const Home = () => {
             {chats.map((chat) => {
               const user=chat.participants.find((participant)=>participant._id!==userId);
               return (
-                <ListItem key={chat.id} onClick={() => setSelectedChat(chat)}>
+                <ListItem key={chat._id} onClick={() => setSelectedChat(chat)}>
                   {user.name}
                 </ListItem>
               )

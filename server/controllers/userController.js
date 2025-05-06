@@ -189,13 +189,15 @@ const addConversation=async(req,res)=>{
 
 
         await conversation.save();
-        await conversation.populate({path:"participants",select:"id name"}).populate({path:"messages"});
+        var conversationAfterPopulate=await conversation.populate({path:"participants",select:"id name"});
+        conversationAfterPopulate=await conversationAfterPopulate.populate({path:"messages"});
+        console.log(conversationAfterPopulate);
 
         user.chats.push(conversation);
 
         await user.save();
 
-        return res.status(201).json(conversation);
+        return res.status(201).json(conversationAfterPopulate);
 
 
     }
