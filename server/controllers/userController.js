@@ -235,6 +235,28 @@ const addMessage=async(req,res)=>{
 }
 
 
+const updateMessage=async(req,res)=>{
+    console.log("in updateMessage");
+   try{
+        const token=checkToken(req);
+       await Message.updateMany(
+        {   
+            isRead:false,
+            senderID:req.body.senderID,
+            receiverID:req.params.id
+
+        },
+        
+            {$set:{isRead:true}}
+        );
+
+        return res.status(200).json({message:"all messages updated as read"});
+   }
+   catch(error){
+    console.log(error.message);
+    return res.status(500).json({message:error.message});
+    }
+}
 
 
 
@@ -243,5 +265,6 @@ const addMessage=async(req,res)=>{
 
 
 
-export default {getUser,deleteUser,updateUser,getAllUsers,getAllConversations,addConversation,addMessage};
+
+export default {getUser,deleteUser,updateUser,getAllUsers,getAllConversations,addConversation,addMessage,updateMessage};
 

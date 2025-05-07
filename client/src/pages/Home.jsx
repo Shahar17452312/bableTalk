@@ -160,9 +160,10 @@ const Home = () => {
   
       // אם הצ'אט הנוכחי נבחר, עדכן את ההודעות גם ב-selectedChat
       if (selectedChatRef.current && selectedChatRef.current._id === data.conversationID) {
+        console.log(data.message);
         setSelectedChat((prevSelected) => ({
           ...prevSelected,
-          messages: [...(prevSelected?.messages || []), data.message]
+          messages: [...(prevSelected?.messages || []), {...data.message,isRead:true}]
         }));
   
         // קריאה ל-askGemini והגדרת תשובה
@@ -192,6 +193,42 @@ const Home = () => {
       }
     };
   }, []);
+
+
+  async function openChatAndUpdateUnreadMessages(chat,userToUpdateMessagesOfUser) {
+
+    try{
+      await axios.post("http://localhost:3000/user/updateReadStatusInMessage/"+userId,{
+        senderID:userToUpdateMessagesOfUser._id,
+        
+      },{
+        headers:{
+          Authorization:"Berear "+token
+        }
+      });
+
+      const updatedChat = {
+        ...chat,
+        messages: chat.messages.map(message => ({
+          ...message,
+          isRead: true
+        }))
+      };
+      setSelectedChat(updatedChat);
+      setChats((prevChats)=>{
+       var newChats= prevChats.map((chat)=>{
+          if(chat._id===updatedChat._id){
+            return updatedChat;
+          }
+          return chat;
+        })
+        return newChats;
+      });
+    }
+    catch(error){
+      console.error("error: "+error.message);
+    }
+  }
   
   
 
@@ -230,6 +267,7 @@ const Home = () => {
         message:{
           senderID:userId,
           receiverID:recieverID,
+          isRead:false,
           messageContent:message,
           language:language
         }
@@ -297,8 +335,10 @@ const Home = () => {
           <List className="chat-list">
             {chats.map((chat) => {
               const user=chat.participants.find((participant)=>participant._id!==userId);
+              const messages=chat.messages.filter((message)=>message.senderID===user._id);
+              const messageHasNotRead=messages.some((message)=>message.isRead===false);
               return (
-                <ListItem key={chat._id} onClick={() => setSelectedChat(chat)}>
+                <ListItem key={chat._id} style={{backgroundColor:messageHasNotRead?"red":null}} onClick={messageHasNotRead?()=>openChatAndUpdateUnreadMessages(chat,user):()=> setSelectedChat(chat)}>
                   {user.name}
                 </ListItem>
               )
