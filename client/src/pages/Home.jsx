@@ -133,29 +133,40 @@ const Home = () => {
         return;
       }
   
-      setChats((prevChats) => {
+      setChats((prevChats = []) => {
         const chatExists = prevChats.some(chat => chat._id === data.conversationID);
       
         if (chatExists) {
-          // עדכון של הצ'אט הקיים עם ההודעה החדשה
-          return prevChats.map((chat) => {
+          // update an existing chat
+          return prevChats.map(chat => {
             if (chat._id === data.conversationID) {
-              return { ...chat, messages: [...chat.messages, data.message] };
+              if (selectedChatRef.current && selectedChatRef.current._id === data.conversationID) {
+                return {
+                  ...chat,
+                  messages: [...(chat.messages || []), {...data.message,isRead:true}]
+                };
+              }
+              else {
+                return {
+                  ...chat,
+                  messages: [...(chat.messages || []), data.message]
+                }
+              };
             }
             return chat;
           });
         } else {
-          console.log("the new conversation:"+data);
-          // הוספת צ'אט חדש עם ההודעה
+          // creating new chat
           const newChat = {
             _id: data.conversationID,
-            participants: data.conversationParticipants || [], // אם צריך
+            participants: data.conversationParticipants || [],
             messages: [data.message],
           };
-          console.log(newChat);
+          console.log("the new conversation:", newChat);
           return [...prevChats, newChat];
         }
       });
+      
       
   
       // אם הצ'אט הנוכחי נבחר, עדכן את ההודעות גם ב-selectedChat
@@ -165,8 +176,14 @@ const Home = () => {
           ...prevSelected,
           messages: [...(prevSelected?.messages || []), {...data.message,isRead:true}]
         }));
+        setChats((prevChats)=>{
+          return prevChats.map((chat)=>{
+            if(chat._id===data.conversationID){
+              return {...chat,messages:[...chat.messages,{...data.message,isRead:true}]}
+            }
+          })
+        })
   
-        // קריאה ל-askGemini והגדרת תשובה
         try {
           console.log(data);
           const geminiAdvice = await askGemini(data.message.messageContent);
@@ -196,6 +213,7 @@ const Home = () => {
 
 
   async function openChatAndUpdateUnreadMessages(chat,userToUpdateMessagesOfUser) {
+    console.log(selectedChat);
 
     try{
       await axios.post("http://localhost:3000/user/updateReadStatusInMessage/"+userId,{
@@ -203,7 +221,7 @@ const Home = () => {
         
       },{
         headers:{
-          Authorization:"Berear "+token
+          Authorization:"Bearer "+token
         }
       });
 
@@ -214,16 +232,16 @@ const Home = () => {
           isRead: true
         }))
       };
-      setSelectedChat(updatedChat);
-      setChats((prevChats)=>{
-       var newChats= prevChats.map((chat)=>{
-          if(chat._id===updatedChat._id){
-            return updatedChat;
-          }
-          return chat;
-        })
-        return newChats;
-      });
+      console.log(updatedChat);
+
+    setSelectedChat(updatedChat);
+    selectedChatRef.current = updatedChat; // ✅ עדכון מיידי של הרפרנס
+
+    setChats((prevChats) =>
+      prevChats.map((chat) =>
+        chat._id === updatedChat._id ? updatedChat : chat
+      )
+    );
     }
     catch(error){
       console.error("error: "+error.message);
@@ -244,6 +262,7 @@ const Home = () => {
         message:{
           senderID:userId,
           receiverID:recieverID,
+          isRead:true,
           messageContent:message,
           language:language
         }
@@ -334,9 +353,9 @@ const Home = () => {
           />
           <List className="chat-list">
             {chats.map((chat) => {
-              const user=chat.participants.find((participant)=>participant._id!==userId);
-              const messages=chat.messages.filter((message)=>message.senderID===user._id);
-              const messageHasNotRead=messages.some((message)=>message.isRead===false);
+              const user=chat.participants.find((participant)=>participant._id!==userId);//getting the sender data
+              const messages=chat.messages.filter((message)=>message.senderID===user._id);//take the sender messages only
+              const messageHasNotRead=messages.some((message)=>message.isRead===false);//check if there is unread message
               return (
                 <ListItem key={chat._id} style={{backgroundColor:messageHasNotRead?"red":null}} onClick={messageHasNotRead?()=>openChatAndUpdateUnreadMessages(chat,user):()=> setSelectedChat(chat)}>
                   {user.name}
