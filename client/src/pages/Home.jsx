@@ -169,6 +169,7 @@ const Home = () => {
       
       
   
+      console.log("this is selectedChatRef :"+selectedChatRef.current);
       // אם הצ'אט הנוכחי נבחר, עדכן את ההודעות גם ב-selectedChat
       if (selectedChatRef.current && selectedChatRef.current._id === data.conversationID) {
         console.log(data.message);
@@ -262,7 +263,7 @@ const Home = () => {
         message:{
           senderID:userId,
           receiverID:recieverID,
-          isRead:true,
+          isRead:false,
           messageContent:message,
           language:language
         }
@@ -356,6 +357,7 @@ const Home = () => {
               const user=chat.participants.find((participant)=>participant._id!==userId);//getting the sender data
               const messages=chat.messages.filter((message)=>message.senderID===user._id);//take the sender messages only
               const messageHasNotRead=messages.some((message)=>message.isRead===false);//check if there is unread message
+              console.log(messageHasNotRead);
               return (
                 <ListItem key={chat._id} style={{backgroundColor:messageHasNotRead?"red":null}} onClick={messageHasNotRead?()=>openChatAndUpdateUnreadMessages(chat,user):()=> setSelectedChat(chat)}>
                   {user.name}
