@@ -3,56 +3,10 @@ import {TextField, Autocomplete,Button} from "@mui/material";
 import "../styles/Register.css"
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import languages from "../config/languages";
 
 function Register(){
-    const languages = [
-        { code: "af", name: "Afrikaans", flag: "🇿🇦" },
-        { code: "sq", name: "Albanian", flag: "🇦🇱" },
-        { code: "am", name: "Amharic", flag: "🇪🇹" },
-        { code: "ar", name: "Arabic", flag: "🇸🇦" },
-        { code: "hy", name: "Armenian", flag: "🇦🇲" },
-        { code: "az", name: "Azerbaijani", flag: "🇦🇿" },
-        { code: "eu", name: "Basque", flag: "🇪🇸" },
-        { code: "bn", name: "Bengali", flag: "🇧🇩" },
-        { code: "bs", name: "Bosnian", flag: "🇧🇦" },
-        { code: "bg", name: "Bulgarian", flag: "🇧🇬" },
-        { code: "my", name: "Burmese", flag: "🇲🇲" },
-        { code: "zh", name: "Chinese", flag: "🇨🇳" },
-        { code: "hr", name: "Croatian", flag: "🇭🇷" },
-        { code: "cs", name: "Czech", flag: "🇨🇿" },
-        { code: "da", name: "Danish", flag: "🇩🇰" },
-        { code: "nl", name: "Dutch", flag: "🇳🇱" },
-        { code: "en", name: "English", flag: "🇬🇧" },
-        { code: "et", name: "Estonian", flag: "🇪🇪" },
-        { code: "fi", name: "Finnish", flag: "🇫🇮" },
-        { code: "fr", name: "French", flag: "🇫🇷" },
-        { code: "ka", name: "Georgian", flag: "🇬🇪" },
-        { code: "de", name: "German", flag: "🇩🇪" },
-        { code: "el", name: "Greek", flag: "🇬🇷" },
-        { code: "he", name: "Hebrew", flag: "🇮🇱" },
-        { code: "hi", name: "Hindi", flag: "🇮🇳" },
-        { code: "hu", name: "Hungarian", flag: "🇭🇺" },
-        { code: "is", name: "Icelandic", flag: "🇮🇸" },
-        { code: "id", name: "Indonesian", flag: "🇮🇩" },
-        { code: "it", name: "Italian", flag: "🇮🇹" },
-        { code: "ja", name: "Japanese", flag: "🇯🇵" },
-        { code: "ko", name: "Korean", flag: "🇰🇷" },
-        { code: "lt", name: "Lithuanian", flag: "🇱🇹" },
-        { code: "ms", name: "Malay", flag: "🇲🇾" },
-        { code: "no", name: "Norwegian", flag: "🇳🇴" },
-        { code: "fa", name: "Persian", flag: "🇮🇷" },
-        { code: "pl", name: "Polish", flag: "🇵🇱" },
-        { code: "pt", name: "Portuguese", flag: "🇵🇹" },
-        { code: "ro", name: "Romanian", flag: "🇷🇴" },
-        { code: "ru", name: "Russian", flag: "🇷🇺" },
-        { code: "es", name: "Spanish", flag: "🇪🇸" },
-        { code: "sv", name: "Swedish", flag: "🇸🇪" },
-        { code: "th", name: "Thai", flag: "🇹🇭" },
-        { code: "tr", name: "Turkish", flag: "🇹🇷" },
-        { code: "uk", name: "Ukrainian", flag: "🇺🇦" },
-        { code: "ur", name: "Urdu", flag: "🇵🇰" },
-        { code: "vi", name: "Vietnamese", flag: "🇻🇳" },
-      ];
+   
 
     const [formValues,setFormValues]=useState({
         email:"",

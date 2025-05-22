@@ -19,7 +19,6 @@ function Login(){
             localStorage.setItem("id",user.data._id);
             localStorage.setItem("name",user.data.name);
             localStorage.setItem("preferredLanguage",user.data.preferredLanguage);
-            localStorage.setItem("token",user.data.token);
 
             navigate("/home");
         }
