@@ -2,8 +2,8 @@
 import {TextField,Button} from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import {  useState } from "react";
-import axios from "axios";
 import "../styles/Login.css";
+import axiosInstance from "../config/axios";
 function Login(){
 
     const [formValues,setFormValues] = useState({ email: "", password: "" });
@@ -14,9 +14,9 @@ function Login(){
     async function onSubmitHandler(event){
         event.preventDefault();
         try{
-            const user=await axios.post("http://localhost:3000/auth/login",formValues);
+            const user=await axiosInstance.post("/auth/login",formValues);
             console.log(user.data);
-            localStorage.setItem("id",user.data.id);
+            localStorage.setItem("id",user.data._id);
             localStorage.setItem("name",user.data.name);
             localStorage.setItem("preferredLanguage",user.data.preferredLanguage);
             localStorage.setItem("token",user.data.token);

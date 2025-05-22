@@ -1,16 +1,18 @@
 import User from "../models/User.js";
 import bcrypt from "bcrypt";
-import {checkToken} from "../util.js";
 import ConverSation from "../models/Conversation.js";
 import Message from "../models/Message.js";
+import { translate } from '@vitalets/google-translate-api';
+
+
+
 
 const getUser=async(req,res)=>{
-   const token=checkToken(req);
-   if(token.status!==202){
-    return res.status(token.status).json({message:token.message});
-   }
 
     try{
+        if(req.userId!==req.params.id){
+            return res.status(401).json({message:"not the same token for the current user"});
+        }
         const user=await User.findById(req.params.id);
         if(!user){
          return res.status(404).json({message:"User not found"});
@@ -19,7 +21,6 @@ const getUser=async(req,res)=>{
             email:user.email,
             name:user.name,
             preferredLanguage:user.preferredLanguage,
-
         });
 
     }
@@ -33,47 +34,42 @@ const getUser=async(req,res)=>{
 
 
 const deleteUser=async(req,res)=>{
-    const token=checkToken(req);
-    if(token.status!==202){
-     return res.status(token.status).json({message:token.message});
-    }
 
     try{
-        const user=await User.findById(req.params.id);
+        if(req.userId!==req.params.id){
+            return res.status(401).json({message:"not the same token fot the current user"});
+        }
+        const user=await User.findByIdAndDelete(req.params.id);
         if(!user){
          return res.status(404).json({message:"User not found"});
-        }
-
-        const result=await user.deleteOne();
-        if(result.deletedCount===0){
-            return res.status(500).json({message:"Failed to delete the user"});
-
         }
         return res.status(200).json({message:"User successfully deleted"});
 
     }
 
     catch(error){
-        return res.status(500).json({message:error.message});
+        const status = error.status || 500;
+            const message = error.message || "Internal server error";
+            console.error("error :",error.message);
+            return res.status(status).json({message:message})   
     }
 };
 
 const updateUser=async(req,res)=>{
-    const token=checkToken(req,req.params.id);
-    if(token.status!==202){
-     return res.status(token.status).json({message:token.message});
-    }
-
-    const detailsToUpdate={};
-
-    Object.entries(req.body).forEach(([key, value]) => {
-        if(value){
-            detailsToUpdate[key]=value;
-        }
-    });
+  
 
     try{
-           
+
+        if(req.userId!==req.params.id){
+           return res.status(401).json({message:"not the same token fot the current user"});
+        }
+        const detailsToUpdate={};
+
+        Object.entries(req.body).forEach(([key, value]) => {
+            if(value){
+                detailsToUpdate[key]=value;
+            }
+        });
         if(detailsToUpdate.password){
             const hash=await bcrypt.hash(detailsToUpdate.password,10);
             detailsToUpdate.password=hash;
@@ -91,13 +87,15 @@ const updateUser=async(req,res)=>{
             email:updatedUser.email,
             name:updatedUser.name,
             preferredLanguage:updatedUser.preferredLanguage,
-            token:token
           });
         
     }
 
     catch(error){
-        return res.status(500).json({message:error.message});
+         const status = error.status || 500;
+        const message = error.message || "Internal server error";
+        console.error("error :",error.message);
+        return res.status(status).json({message:message})
     }
 
 
@@ -105,28 +103,30 @@ const updateUser=async(req,res)=>{
 }
 
 
+
+
 const getAllUsers=async(req,res)=>{
-    const token=checkToken(req);
-    if(token.status!==202){
-     return res.status(token.status).json({message:token.message});
-    }
 
     try{
-        const foundUsers=await User.find();
-        if(!foundUsers){
-         return res.status(404).json({message:"User not found"});
+        console.log("userId: "+req.userId);
+        console.log("req.params.id : "+req.params.id);
+        if(req.userId!==req.params.id){
+            return res.status(401).json({message:"not the same token fot the current user"});
         }
+        const foundUsers=await User.find().select("_id name");
+        if(foundUsers.length===0){
+         return res.status(404).json({message:"User not found"});
+        }        
 
-        const users= foundUsers.map((user)=>{
-            return {id:user.id,name:user.name};
-        })
-
-        return res.status(200).json(users);
+        return res.status(200).json(foundUsers);
 
     }
 
     catch(error){
-        return res.status(500).json({message:error.message});
+         const status = error.status || 500;
+        const message = error.message || "Internal server error";
+        console.error("error :",error.message);
+        return res.status(status).json({message:message})
     }
 
 
@@ -135,20 +135,17 @@ const getAllUsers=async(req,res)=>{
 
 const getAllConversations = async (req, res) => {
     try {
-        const token = checkToken(req);
-        if (token.status !== 202) {
-            return res.status(token.status).json({ message: token.message });
+        if(req.userId!==req.params.id){
+            return res.status(401).json({message:"not the same token for the current user"});
         }
-
         const chats = await ConverSation.find({ participants: req.params.id })
         .populate({ path: "participants", select: "_id name" })
         .populate({ path: "messages" });
 
-        console.log(JSON.stringify(chats));
 
         // אם אין צ'אטים תואמים
         if (chats.length === 0) {
-            return res.status(401).json({ message: "There are no conversations yet" });
+            return res.status(200).json({ message: "There are no conversations yet" });
         }
 
         return res.status(200).json(chats);
@@ -162,12 +159,11 @@ const getAllConversations = async (req, res) => {
 
 const addConversation=async(req,res)=>{
 
-    const {participantID}=req.body;
     try{
-        const token=checkToken(req);
-        if(token.status!==202){
-            return res.status(token.status).json({message:token.message});
+          if(req.userId!==req.params.id){
+            return res.status(401).json({message:"not the same token for the current user"});
         }
+        const {participantID}=req.body;
 
         const user=await User.findById(req.params.id);
         if(!user){
@@ -181,12 +177,10 @@ const addConversation=async(req,res)=>{
 
         await conversation.save();
         var conversationAfterPopulate=await conversation.populate({path:"participants",select:"id name"});
-        conversationAfterPopulate=await conversationAfterPopulate.populate({path:"messages"});
-        console.log(conversationAfterPopulate);
-
         user.chats.push(conversation);
 
         await user.save();
+
 
         return res.status(201).json(conversationAfterPopulate);
 
@@ -200,30 +194,44 @@ const addConversation=async(req,res)=>{
 
 
 const addMessage=async(req,res)=>{
-    const token=checkToken(req);
-    if(token.status!==202){
-        return res.status(token.status).json({message:token.message});
-    }
-    const {conversationID}=req.body;
 
     try{
+          if(req.userId!==req.params.id){
+            return res.status(401).json({message:"not the same token fot the current user"});
+        }
+        const {conversationID}=req.body;
         const foundConversation=await ConverSation.findById(conversationID);
         if(!foundConversation){
             return res.status(404).json({message:"Not found"});
         }
-        const newMessage= new Message(
-            req.body.message
-        );
-        await newMessage.save();
+        await foundConversation.populate({path:"participants",select:"id name preferredLanguage"});
+        const receiver = foundConversation.participants.find((participant) =>participant._id.toString()===req.body.message.receiverID);
+        if (!receiver) {
+            return res.status(404).json({ message: "Receiver not found in the conversation" });
+        }
+
+        
+        const receiverLanguage = receiver.preferredLanguage;
+        const translatedMessage=await translate(req.body.message.messageContent,{to:receiverLanguage});
+
+
+        const newMessage = new Message({
+            ...req.body.message,
+            senderTranslation:req.body.message.messageContent,
+            receiverTranslation:translatedMessage.text
+        });
+        const message=await newMessage.save();
+        await message.populate();
         foundConversation.messages.push(newMessage);
-        console.log(foundConversation.messages);
 
         await foundConversation.save();
         await foundConversation.populate({path:"participants",select:"id name"});
         await foundConversation.populate({path:"messages"});
 
-        return res.status(200).json(foundConversation);
-
+        return res.status(200).json({
+            conversation:foundConversation,
+            newMessage:message
+        });// the new chat with the new message in it
 
     }
 
@@ -235,16 +243,16 @@ const addMessage=async(req,res)=>{
 }
 
 
-const updateMessage=async(req,res)=>{
-    console.log("in updateMessage");
+const updateReadStatusInMessage=async(req,res)=>{
+      if(req.userId!==req.params.id){
+            return res.status(401).json({message:"not the same token fot the current user"});
+        }
    try{
-        const token=checkToken(req);
        await Message.updateMany(
         {   
             isRead:false,
             senderID:req.body.senderID,
             receiverID:req.params.id
-
         },
         
             {$set:{isRead:true}}
@@ -266,5 +274,6 @@ const updateMessage=async(req,res)=>{
 
 
 
-export default {getUser,deleteUser,updateUser,getAllUsers,getAllConversations,addConversation,addMessage,updateMessage};
+
+export default {getUser,deleteUser,updateUser,getAllUsers,getAllConversations,addConversation,addMessage,updateReadStatusInMessage};
 

@@ -18,11 +18,7 @@ const userSchema=new mongoose.Schema({
     preferredLanguage:{
         type:String,
         required:true
-    },
-    chats:[{type:mongoose.Schema.Types.ObjectId,ref:"conversation"}]
-
-
-
+    }
 })
 
 const User=mongoose.model("user",userSchema);

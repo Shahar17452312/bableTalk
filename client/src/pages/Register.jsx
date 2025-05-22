@@ -85,7 +85,9 @@ function Register(){
         }
         try{
             console.log("Sending request to server");
-            await axios.post("http://localhost:3000/auth/register",formValues);
+            const newUser=await axios.post("http://localhost:3000/auth/register",formValues);
+            localStorage.setItem(newUser.data._id,"id");
+            localStorage.setItem(newUser.data.preferredLanguage,"preferredLanguage");
             navigate("/home");
             
 
@@ -100,7 +102,9 @@ function Register(){
 
     function preferedLanguageHandler(event){
         const value=event.target.innerHTML;
-        setFormValues((prev)=>({...prev,preferredLanguage:value}));
+        const preferredLanguageCode=languages.find((languages)=>languages.name===value).code;
+        console.log(preferredLanguageCode)
+        setFormValues((prev)=>({...prev,preferredLanguage:preferredLanguageCode}));
         
     }
 

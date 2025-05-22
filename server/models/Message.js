@@ -17,7 +17,14 @@ const MessageSchema = new mongoose.Schema({
         trim: true, 
         minlength: 1
         },
-
+    senderTranslation: 
+    { type: String, 
+        required: true 
+    },
+    receiverTranslation: { 
+        type: String, 
+        required: true 
+    },  
     isRead:{
         type:Boolean,
         required:true,

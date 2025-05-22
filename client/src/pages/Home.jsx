@@ -1,420 +1,275 @@
-import { useState, useRef, useEffect } from "react";
-import { Box, Paper, TextField, List, ListItem, Button } from "@mui/material";
+import { Box, Paper, TextField, List, ListItem,Button } from "@mui/material";
 import HamburgerMenu from "../components/HamburgerMenu.jsx";
-import axios from "axios";
-import askGemini from "../../utils.js";
 import "../styles/Home.css";
+import { useEffect, useState,useRef } from "react";
+import axiosInstance from "../config/axios.js";
+import { io } from "socket.io-client";
+
+
 
 const Home = () => {
-  const [searchChats, setSearchChats] = useState("");
-  const [searchUsers, setSearchUsers] = useState("");
-  const [chats, setChats] = useState([]);
-  const [selectedChat, setSelectedChat] = useState(null);
-  const [message, setMessage] = useState(""); 
-  const [users,setusers] = useState([]);
-  const socketRef=useRef();
-  const [geminiAdvice,setGeminiAdvice]=useState("");
-  
-
-  const searchInputRef = useRef(null);
-  const usersListRef = useRef(null);
-  const selectedChatRef = useRef(selectedChat);
   const userId=localStorage.getItem("id");
-  const userName=localStorage.getItem("name");//the user name who is currently connected
-  const token=localStorage.getItem("token");
+  const preferredLanguage=localStorage.getItem("preferredLanguage");
+  const[users,setUsers]=useState([]);
+  const [searchUsers, setSearchUsers] = useState("");
+  const [chats,setChats]=useState([]);
+  const [selectedChatId,setSelectedChatId]=useState(null);
+  const [message,setMessage]=useState("");
+  const socketRef = useRef(null);
 
-  const handleSearchChats = (event) => setSearchChats(event.target.value);
-  const handleSearchUsers = (event) => setSearchUsers(event.target.value);
-
-  const addUserToChats = async(user) => {// adding the chosen user of the serach box inside the chats box
-    const hasChatAlready = chats.some((chat) => 
-      chat.participants.some((participant) => participant._id===user.id)
-    );
-      
-
-    if (!hasChatAlready&&(user.id!==userId)) {
+  // adding chats and users from database when the user entered to the home page
+  useEffect(()=>{
+    async function getUsers() {
       try{
-        const newChat=await axios.post("http://localhost:3000/user/addConversation/"+userId,{
-          participantID:user.id
-        },{
-          headers:{
-            Authorization:"Berear "+token
-          }
-        });
-        console.log("new conversation:",newChat.data);
-        setChats((prevChats) => [...prevChats,newChat.data]);
-        
+        const allUsers=await axiosInstance.get("/user/getAllUsers/"+userId);
+  
+        return setUsers(allUsers.data);
       }
       catch(error){
-        console.error("error: "+error.message);
+        console.error("Failed to fetch users:", error);
+
       }
     }
-    setSearchUsers("");
-  };
 
-
-  useEffect(() => {
-    selectedChatRef.current = selectedChat;
-  }, [selectedChat]);
-
-  useEffect(() => {//click listeners
-    const handleClickOutside = (event) => {
-      if (
-        searchInputRef.current &&
-        !searchInputRef.current.contains(event.target) &&
-        usersListRef.current &&
-        !usersListRef.current.contains(event.target)
-      ) {
-        setSearchUsers("");
+    async function getChats() {
+      try{
+        const allChats=await axiosInstance.get("/user/getConversations/"+userId);
+  
+        return setChats(allChats.data);
       }
-    };
+      catch(error){
+        console.error("Failed to fetch users:", error);
 
-    document.addEventListener("click", handleClickOutside);
-
-    return () => {
-      document.removeEventListener("click", handleClickOutside);
-    };
-  }, []);
-
-  useEffect(()=>{// requset for the getAllUsers to be able to search for new user and request for adding the current chats the user has
-   const getUsersAndChats=async()=>{
-    try{
-      const users=await axios.get("http://localhost:3000/user/getAllUsers/"+userId,{
-        headers:{
-          Authorization:"Bearer "+token
-        }
-      });
-      setusers(users.data);
-
-      const chats=await axios.get("http://localhost:3000/user/getConversations/"+userId,{
-        headers:{
-          Authorization:"Bearer "+token
-        }
-      });
-      console.log(chats.data)
-
-      setChats(chats.data);
-  
+      }
     }
-    catch(error){
+    getChats();
+    getUsers();
 
-      console.error("error: "+error.message);
-    }
-  }
-
-  
-
-  getUsersAndChats();
+    
 
 
   },[]);
 
-  
-
+  //if the user clicke on the screen but not the search user bar, the list of this bar closed
   useEffect(() => {
-    // אם כבר יש חיבור לא נפתח חדש
-    if (socketRef.current) return;
-  
-    // יצירת חיבור WebSocket
-    const socket = new WebSocket("ws://localhost:4000");
-  
-    socketRef.current = socket;
-  
-    socket.onopen = () => {
-      console.log("connected to ws server");
-      socketRef.current.send(JSON.stringify({ type: "register", userId: userId }));
-    };
-  
-    socket.onmessage = async (event) => {
-      const data = JSON.parse(event.data);
-  
-      if (!data || !data.conversationID || !data.message) {
-        console.error("❌ Invalid message format", data);
-        return;
-      }
-  
-      setChats((prevChats = []) => {
-        const chatExists = prevChats.some(chat => chat._id === data.conversationID);
-      
-        if (chatExists) {
-          // update an existing chat
-          return prevChats.map(chat => {
-            if (chat._id === data.conversationID) {
-              if (selectedChatRef.current && selectedChatRef.current._id === data.conversationID) {
-                return {
-                  ...chat,
-                  messages: [...(chat.messages || []), {...data.message,isRead:true}]
-                };
-              }
-              else {
-                return {
-                  ...chat,
-                  messages: [...(chat.messages || []), data.message]
-                }
-              };
-            }
-            return chat;
-          });
-        } else {
-          // creating new chat
-          const newChat = {
-            _id: data.conversationID,
-            participants: data.conversationParticipants || [],
-            messages: [data.message],
-          };
-          console.log("the new conversation:", newChat);
-          return [...prevChats, newChat];
-        }
-      });
-      
-      
-  
-      console.log("this is selectedChatRef :"+selectedChatRef.current);
-      // אם הצ'אט הנוכחי נבחר, עדכן את ההודעות גם ב-selectedChat
-      if (selectedChatRef.current && selectedChatRef.current._id === data.conversationID) {
-        console.log(data.message);
-        setSelectedChat((prevSelected) => ({
-          ...prevSelected,
-          messages: [...(prevSelected?.messages || []), {...data.message,isRead:true}]
-        }));
-        setChats((prevChats)=>{
-          return prevChats.map((chat)=>{
-            if(chat._id===data.conversationID){
-              return {...chat,messages:[...chat.messages,{...data.message,isRead:true}]}
-            }
-          })
-        })
-  
-        try {
-          console.log(data);
-          const geminiAdvice = await askGemini(data.message.messageContent);
-          setGeminiAdvice(geminiAdvice);
-          console.log("✅ selectedChat updated with AI advice", selectedChatRef.current);
-        } catch (error) {
-          console.error("Error fetching AI advice:", error);
-        }
-      }
-    };
-  
-    socket.onclose = () => {
-      console.log("closing connection");
-    };
-  
-    socket.onerror = (error) => {
-      console.error("error", error.message);
-    };
+    const listener = () => { setSearchUsers("") };
+    document.body.addEventListener("click", listener);
   
     return () => {
-      if (socketRef.current) {
-        socketRef.current.close();
-        socketRef.current = null;
-      }
+      document.body.removeEventListener("click", listener);
     };
   }, []);
 
+  //connection to the socket.io server
+  useEffect(() => {
+    socketRef.current = io(import.meta.env.VITE_API_URL);
 
-  async function openChatAndUpdateUnreadMessages(chat,userToUpdateMessagesOfUser) {
-    console.log(selectedChat);
+    socketRef.current.on("connect", () => {
+      console.log("Connected to socket.io server");
+      socketRef.current.emit("register", userId);
+    });
 
-    try{
-      await axios.post("http://localhost:3000/user/updateReadStatusInMessage/"+userId,{
-        senderID:userToUpdateMessagesOfUser._id,
+    socketRef.current.on("receiveMessage", (message) => {
+      const newMessage={ 
+        senderID: message.senderID,
+        receiverID: message.receiverID,
+        messageContent: message.messageContent,
+        senderTranslation: message.senderTranslation,
+        receiverTranslation: message.receiverTranslation,
+        isRead: message.isRead,
+        language: message.language,
+        _id: message._id,
+        createdAt: message.createdAt,
         
-      },{
-        headers:{
-          Authorization:"Bearer "+token
-        }
-      });
+      }
+      setChats((prevChats) =>
+        prevChats.map((chat) =>
+          chat._id === message.conversationID
+            ? { ...chat, messages: [...chat.messages, newMessage] }
+            : chat
+        )
+      );
+    });
 
-      const updatedChat = {
-        ...chat,
-        messages: chat.messages.map(message => ({
-          ...message,
-          isRead: true
-        }))
-      };
-      console.log(updatedChat);
+    return () => {
+      socketRef.current.disconnect();
+      console.log("Socket disconnected");
+    };
+  }, []);
 
-    setSelectedChat(updatedChat);
-    selectedChatRef.current = updatedChat; // ✅ עדכון מיידי של הרפרנס
-
-    setChats((prevChats) =>
-      prevChats.map((chat) =>
-        chat._id === updatedChat._id ? updatedChat : chat
-      )
-    );
-    }
-    catch(error){
-      console.error("error: "+error.message);
-    }
-  }
-  
   
 
 
- async function sendMessage(){//handling the new message that sent to the user and post it on the screen
-
-    const recieverID=selectedChat.participants.find((participant)=>participant._id!==userId);
-    const language=localStorage.getItem("preferredLanguage");
+  //adding new chat when the user clicks on a new user to send him a meesage from "search users" bar
+  async function addToChats(newParticipantID){
     try{
-      const updatedConversation=await axios.post("http://localhost:3000/user/addMessage/"+userId,{
-        conversationID:selectedChat._id,
-        conversationParticipants:selectedChat.participants,
-        message:{
-          senderID:userId,
-          receiverID:recieverID,
-          isRead:false,
-          messageContent:message,
-          language:language
-        }
-      },{
-        headers:{
-          Authorization:"Bearer "+token
-        }
+      const foundChat = chats.find((chat) =>
+        chat.participants.some((participant) => participant._id === newParticipantID)
+      );
+      if(foundChat){
+        return;
+      }
+      const newChat=await axiosInstance.post("/user/addConversation/"+userId,{
+        participantID:newParticipantID
       });
 
-      setSelectedChat((prevChat) => {
-    
-        const updatedMessages = [...prevChat.messages, updatedConversation.data.messages.at(-1)];
-    
-        return { ...prevChat, messages: updatedMessages };
-      });
-      
-      socketRef.current.send(JSON.stringify({
-        type:"sendMessage",
-        conversationID:selectedChat._id,
-        conversationParticipants:selectedChat.participants,
-        message:{
-          senderID:userId,
-          receiverID:recieverID,
-          isRead:false,
-          messageContent:message,
-          language:language
-        }
-      }))
+      console.log(newChat.participants);
 
-      setMessage("");
-
-
-
-
+      return setChats((prev)=>[...prev,newChat.data]);
     }
-
     catch(error){
-      console.error("error: ",error.message);
+      console.error("Failed to fetch users:", error);
+
     }
   }
 
+
+  //add a message in the current chat and send the message to the other user using ws server
+  async function sendMessage() {
+    try{
+      const receiver=chats.find((chat)=>chat._id===selectedChatId).participants.find((participant)=>participant._id!==userId);
+      const receiverID=receiver._id;
+      const data= {conversationID:selectedChatId,
+        message:{
+          senderID:userId,
+          receiverID:receiverID,
+          messageContent:message,
+          senderTranslation:"",
+          receiverTranslation:"",
+          isRead:false,
+          language:preferredLanguage   
+        }
+      };
+      const newConversation=await axiosInstance.post("/user/addMessage/"+userId,data);
+
+      //updating the chat in the UI
+      setChats((prevChats)=>{
+        const newChats= prevChats.map((chat)=>{
+          if(chat._id===newConversation.data.conversation._id){
+            return newConversation.data.conversation;
+          }
+          return chat
+        });
+
+        return newChats;
+      });
+
+
+      if (socketRef.current && socketRef.current.connected) {
+        console.log(newConversation.data);
+        socketRef.current.emit("sendMessage", {
+          conversationID:newConversation.data.conversation._id,
+          ...newConversation.data.newMessage
+        });
+      }
+
+
+    }
+    catch(error){
+       console.error(error.message);
+    }
+  }
+
+  
+
+  
   return (
     <Box className="home-main-container">
-      <Paper className="top-search" elevation={3} sx={{ backgroundColor: "#d1f7d1" }}>
-        <TextField
-          label="Search users"
-          variant="outlined"
-          fullWidth
-          value={searchUsers}
-          onChange={handleSearchUsers}
-          inputRef={searchInputRef}
-        />
-
-        {searchUsers && (
-          <List className="floating-users-list" ref={usersListRef} sx={{ position: "absolute" }}>
-            {users
-              .filter((user) =>
-                user.name.toLowerCase().includes(searchUsers.toLowerCase())
-              )
-              .map((user) => {
-                if(user.name!==userName){
-                  return <ListItem key={user.id} button="true" onClick={() => addUserToChats(user)}>
-                  {user.name}
+        <Paper className="top-search" elevation={3} sx={{ backgroundColor: "#d1f7d1" }}>
+          <TextField
+            label="Search users"
+            variant="outlined"
+            fullWidth
+            value={searchUsers}
+            onChange={(e) => setSearchUsers(e.target.value)}
+          />
+          {searchUsers && (
+            <List className="floating-users-list" sx={{ position: "absolute" }}>
+              {users
+                .filter(
+                  (user) =>
+                    user.name.toLowerCase().includes(searchUsers.toLowerCase()) &&
+                    user._id !== userId
+                )
+                .map((user) => (
+                  <ListItem key={user._id} button="true" onClick={()=>addToChats(user._id)}>
+                    {user.name}
                   </ListItem>
-                }
+                ))}
+            </List>
+          )}
+        </Paper>
 
-              }
-                
-            )}
-          </List>
-        )}
-      </Paper>
 
       <Box className="container">
         <Paper className="HamburgerPaper" sx={{ backgroundColor: "#d1f7d1" }} elevation={0}>
           <HamburgerMenu />
         </Paper>
 
-        {/* חיפוש שיחות קיימות */}
         <Paper className="sidebar" elevation={3} sx={{ backgroundColor: "#1de9b6" }}>
           <TextField
             className="search-box"
             label="Search chats"
             variant="outlined"
             fullWidth
-            value={searchChats}
-            onChange={handleSearchChats}
           />
           <List className="chat-list">
-            {chats.map((chat) => {
-              const user=chat.participants.find((participant)=>participant._id!==userId);//getting the sender data
-              const messages=chat.messages.filter((message)=>message.senderID===user._id);//take the sender messages only
-              const messageHasNotRead=messages.some((message)=>message.isRead===false);//check if there is unread message
-              console.log(messageHasNotRead);
-              return (
-                <ListItem key={chat._id} style={{backgroundColor:messageHasNotRead?"red":null}} onClick={messageHasNotRead?()=>openChatAndUpdateUnreadMessages(chat,user):()=> setSelectedChat(chat)}>
-                  {user.name}
-                </ListItem>
-              )
-            })}
+            {chats.map((chat)=>
+            <ListItem key={chat._id} style={{ backgroundColor: "green",marginBottom:"5px" }} onClick={()=>setSelectedChatId(chat._id)}>
+              {chat.participants.find((participant)=>participant._id!==userId).name}
+            </ListItem>
+          )}
+            
           </List>
         </Paper>
 
-        {selectedChat && (
         <Paper className="chat-box" elevation={3}>
-          <h4 style={{ textAlign: "center", color: "blue" }}>
-            {selectedChat.participants.find((participant) => participant._id !== userId).name}
-          </h4>
-          <Box className="chat-messages" sx={{ display: "flex", flexDirection: "column" }}>
-            {selectedChat.messages.map((msg, index) => (
-              <Box key={index} className="chat-message" sx={{
-                backgroundColor: msg.senderID === userId ? "green" : "blue",
-                maxWidth: "fit-content",
-                padding: "8px",
-                borderRadius: "8px",
-                display: "flex",
-                alignSelf: msg.senderID === userId ? "flex-start" : "flex-end"
-              }}>
-                {msg.messageContent}
-              </Box>
-            ))}
-          </Box>
+          {selectedChatId && (
+            <>
+              {(() => {
+                const currentChat = chats.find((chat) => chat._id === selectedChatId);
+                return (
+                  <>
+                    <h4 style={{ textAlign: "center", color: "blue" }}>
+                      {currentChat.participants.find((participant) => participant._id !== userId).name}
+                    </h4>
+                    <Box className="chat-messages" sx={{ display: "flex",flexDirection: "column"}}>
+                      {currentChat.messages.map((message) =>
+                        <Box key={message._id} className="chat-message" sx={{
+                          backgroundColor: message.senderID===userId?"green":"blue",
+                          maxWidth: "40%",
+                          padding: "8px",
+                          borderRadius: "8px",
+                          display: "inline-block",
+                          alignSelf:  message.senderID===userId?"flex-start":"flex-end",
+                          wordWrap: "break-word",
+                          overflowWrap: "break-word",
+                          whiteSpace: "pre-wrap"
+                        }}>
+                          {message.senderID===userId?message.messageContent:message.receiverTranslation}
+                        </Box>
+                      )}
+                    </Box>
 
-          {/* תיבת טקסט לשליחת הודעה */}
-          <Box className="message-input-container" sx={{ display: "flex", gap: 1, padding: 1 }}>
-            <TextField
-              fullWidth
-              variant="outlined"
-              label="Type a message..."
-              value={message}
-              onChange={(e) => setMessage(e.target.value)} // עדכון ההודעה שהוזנה
-              placeholder={geminiAdvice ? `AI suggests: ${geminiAdvice}` : "Type a message..."} // הצגת ההמלצה אם יש
-            />
+                    <Box sx={{ display: "flex", gap: 1 }}>
+                      <TextField
+                        id="outlined-basic"
+                        label={message?"":"Enter a message..."}
+                        variant="outlined"
+                        fullWidth
+                        onChange={(e)=>setMessage(e.target.value)}
+                      />
+                      <Button variant="contained" onClick={sendMessage}>Send</Button>
+                    </Box>
 
-            {/* אם יש המלצה, הצגת כפתור להוספת ההמלצה */}
-            {geminiAdvice && (
-              <Button
-                variant="contained"
-                color="secondary"
-                onClick={() => setMessage(geminiAdvice)} // אם המשתמש לוחץ על ההמלצה, היא תתווסף לשדה הטקסט
-              >
-                Use Suggestion
-              </Button>
-            )}
 
-            <Button variant="contained" color="primary" onClick={sendMessage}>
-              Send
-            </Button>
-          </Box>
-        </Paper>
-      )}
+                  </>
+                );
+              })()}
+            </>
+          )}
+      </Paper>
+
       </Box>
     </Box>
   );

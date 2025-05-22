@@ -9,7 +9,7 @@ router.post("/addConversation/:id",userController.addConversation)
 router.get("/getAllUsers/:id", userController.getAllUsers);
 router.get("/getConversations/:id",userController.getAllConversations);
 router.post("/addMessage/:id",userController.addMessage);
-router.post("/updateReadStatusInMessage/:id",userController.updateMessage);
+router.post("/updateReadStatusInMessage/:id",userController.updateReadStatusInMessage);
 
 
 
