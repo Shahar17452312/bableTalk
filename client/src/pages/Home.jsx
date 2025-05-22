@@ -7,7 +7,7 @@ import { io } from "socket.io-client";
 
 
 
-const Home = () => {
+function Home() {
   const userId=localStorage.getItem("id");
   const preferredLanguage=localStorage.getItem("preferredLanguage");
   const[users,setUsers]=useState([]);
