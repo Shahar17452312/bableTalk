@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+import mongoose, { Mongoose } from "mongoose";
 
 const userSchema=new mongoose.Schema({
     email:{
@@ -18,7 +18,13 @@ const userSchema=new mongoose.Schema({
     preferredLanguage:{
         type:String,
         required:true
+    },
+    chats:[
+        {
+        type:mongoose.Schema.Types.ObjectId,
+        ref:"ConverSation"
     }
+    ]
 })
 
 const User=mongoose.model("user",userSchema);

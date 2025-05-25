@@ -34,6 +34,7 @@ function Home() {
     async function getChats() {
       try{
         const allChats=await axiosInstance.get("/user/getConversations/"+userId);
+        console.log(allChats.data);
   
         return setChats(allChats.data);
       }
@@ -115,7 +116,7 @@ function Home() {
 
       console.log(newChat.participants);
 
-      return setChats((prev)=>[...prev,newChat.data]);
+       setChats((prev)=>[...prev,newChat.data]);
     }
     catch(error){
       console.error("Failed to fetch users:", error);
@@ -213,14 +214,23 @@ function Home() {
             variant="outlined"
             fullWidth
           />
-          <List className="chat-list">
-            {chats.map((chat)=>
-            <ListItem key={chat._id} style={{ backgroundColor: "green",marginBottom:"5px" }} onClick={()=>setSelectedChatId(chat._id)}>
-              {chat.participants.find((participant)=>participant._id!==userId).name}
-            </ListItem>
-          )}
-            
-          </List>
+          {chats.length !== 0 && (
+              <List className="chat-list">
+                {chats.map((chat) => (
+                  <ListItem
+                    key={chat._id}
+                    style={{ color:"white",backgroundColor: "green", marginBottom: "5px" }}
+                    onClick={() => setSelectedChatId(chat._id)}
+                  >
+                    {
+                      chat.participants.find((participant) => participant._id !== userId)
+                        ?.name
+                    }
+                  </ListItem>
+                ))}
+              </List>
+            )}
+
         </Paper>
 
         <Paper className="chat-box" elevation={3}>
@@ -242,6 +252,7 @@ function Home() {
                           borderRadius: "8px",
                           display: "inline-block",
                           alignSelf:  message.senderID===userId?"flex-start":"flex-end",
+                          color:"white",
                           wordWrap: "break-word",
                           overflowWrap: "break-word",
                           whiteSpace: "pre-wrap"

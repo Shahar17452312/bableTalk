@@ -39,9 +39,13 @@ function Register(){
         }
         try{
             console.log("Sending request to server");
-            const newUser=await axios.post("http://localhost:3000/auth/register",formValues);
-            localStorage.setItem(newUser.data._id,"id");
-            localStorage.setItem(newUser.data.preferredLanguage,"preferredLanguage");
+            const newUser=await axios.post("http://localhost:3000/auth/register",formValues,
+                {
+                    withCredentials:true
+                }
+            );
+            localStorage.setItem("id",newUser.data._id);
+            localStorage.setItem("preferredLanguage",newUser.data.preferredLanguage);
             navigate("/home");
             
 

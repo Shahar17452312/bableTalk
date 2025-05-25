@@ -94,7 +94,7 @@ const loginHandler=async(req,res)=>{
                 httpOnly: true,       // לא מאפשר גישה ל-cookie מצד ה-JS בדפדפן (מונע XSS)
                 secure: process.env.NODE_ENV === "production", // שולח רק ב-HTTPS בפרודקשן
                 sameSite: "none",  
-                maxAge: 1000 * 60 * 15 
+                maxAge: 1000 * 60 * 1 
             });
              res.cookie("refreshToken", refreshToken, {
                 httpOnly: true,       // לא מאפשר גישה ל-cookie מצד ה-JS בדפדפן (מונע XSS)
@@ -122,7 +122,7 @@ const loginHandler=async(req,res)=>{
 }
 const refreshTokenHandler=(req, res) => {
     try{
-        console.log("on refresh token handler");
+        console.log(req.cookies);
             const refreshToken = req.cookies.refreshToken;
 
             if (!refreshToken) {
@@ -133,8 +133,8 @@ const refreshTokenHandler=(req, res) => {
             const accessToken=jwt.sign({id:decoded.id},process.env.TOKEN_SECRET_KEY,{expiresIn:process.env.TOKEN_EXPIRES_IN});
 
             res.cookie("accessToken", accessToken, {
-                httpOnly: true,       // לא מאפשר גישה ל-cookie מצד ה-JS בדפדפן (מונע XSS)
-                secure: process.env.NODE_ENV === "production", // שולח רק ב-HTTPS בפרודקשן
+                httpOnly: true,       
+                secure: process.env.NODE_ENV === "production", 
                 sameSite: "none",  
                 maxAge: 1000 * 60 * 15 
             });
@@ -153,7 +153,15 @@ const refreshTokenHandler=(req, res) => {
   
 };
 
+//full checking in the checkTokenMiddleware but here we check if it is the token of the current user
+const validateToken=(req,res)=>{
+    if(req.userId!==req.params.id){
+            return res.status(401).json({message:"not the same token for the current user"});
+    }
+    return res.status(200).json({message:"user has token"});
+}
 
 
 
-export default {registerHandler,loginHandler,refreshTokenHandler};
+
+export default {registerHandler,loginHandler,refreshTokenHandler,validateToken};

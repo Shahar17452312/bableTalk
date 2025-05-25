@@ -70,6 +70,17 @@ const updateUser=async(req,res)=>{
                 detailsToUpdate[key]=value;
             }
         });
+        if(detailsToUpdate.name){
+            console.log(detailsToUpdate.name);
+            const hasUser=await User.find(
+                    {name:detailsToUpdate.name}
+                
+            );
+            if(hasUser.length!==0){
+                        return res.status(400).json({message:"there is already user with this"})
+            }
+        }
+         
         if(detailsToUpdate.password){
             const hash=await bcrypt.hash(detailsToUpdate.password,10);
             detailsToUpdate.password=hash;
@@ -81,6 +92,8 @@ const updateUser=async(req,res)=>{
             },
             { new: true } 
           );
+
+          console.log(updatedUser)
 
           return res.status(200).json({
             message:"User updated",
@@ -145,7 +158,7 @@ const getAllConversations = async (req, res) => {
 
         // אם אין צ'אטים תואמים
         if (chats.length === 0) {
-            return res.status(200).json({ message: "There are no conversations yet" });
+            return res.status(200).json([]);
         }
 
         return res.status(200).json(chats);
@@ -212,13 +225,19 @@ const addMessage=async(req,res)=>{
 
         
         const receiverLanguage = receiver.preferredLanguage;
-        const translatedMessage=await translate(req.body.message.messageContent,{to:receiverLanguage});
+         var translatedMessage;
+        try{
+            translatedMessage=await translate(req.body.message.messageContent,{to:receiverLanguage});
+        }
+        catch(error){
+            translatedMessage=req.body.message.messageContent;
+        }
 
 
         const newMessage = new Message({
             ...req.body.message,
             senderTranslation:req.body.message.messageContent,
-            receiverTranslation:translatedMessage.text
+            receiverTranslation:translatedMessage.text?translatedMessage.text:translatedMessage
         });
         const message=await newMessage.save();
         await message.populate();
