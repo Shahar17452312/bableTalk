@@ -1,4 +1,4 @@
-bableTalk
+
 bableTalk is a real-time multilingual chat application built with React, Node.js, Express, Socket.io, JWT, and MongoDB. It allows users to chat in their own language while messages are automatically translated for the recipient. This makes it easy for people from different countries to communicate seamlessly.
 
 Features
